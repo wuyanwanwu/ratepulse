@@ -21,10 +21,22 @@ Windows v1 features:
 
 ## Run the Windows widget
 
+Published exe:
+
+```text
+D:\program\ratepulse\release\win-x64\RatePulse.Windows.exe
+```
+
 Double-click:
 
 ```text
 D:\program\ratepulse\Start-RatePulse.bat
+```
+
+Create or update the published exe:
+
+```text
+D:\program\ratepulse\Publish-RatePulse.bat
 ```
 
 Command line:

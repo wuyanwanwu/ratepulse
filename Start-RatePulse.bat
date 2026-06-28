@@ -3,6 +3,12 @@ setlocal
 
 set "DOTNET_EXE=E:\DevTools\dotnet\dotnet.exe"
 set "PROJECT_FILE=D:\program\ratepulse\src\RatePulse.Windows\RatePulse.Windows.csproj"
+set "PUBLISHED_EXE=D:\program\ratepulse\release\win-x64\RatePulse.Windows.exe"
+
+if exist "%PUBLISHED_EXE%" (
+    start "" "%PUBLISHED_EXE%"
+    exit /b 0
+)
 
 if not exist "%DOTNET_EXE%" (
     echo RatePulse could not start.
