@@ -21,6 +21,14 @@ Windows v1 features:
 
 ## Run the Windows widget
 
+Double-click:
+
+```text
+D:\program\ratepulse\Start-RatePulse.bat
+```
+
+Command line:
+
 ```powershell
 E:\DevTools\dotnet\dotnet.exe run --project D:\program\ratepulse\src\RatePulse.Windows\RatePulse.Windows.csproj
 ```
