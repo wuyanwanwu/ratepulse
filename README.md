@@ -9,6 +9,14 @@ Current scaffold:
 - SDK location on this machine: `E:\DevTools\dotnet`
 - Default currency pairs: USD/CNY, EUR/CNY, JPY/CNY, HKD/CNY, GBP/CNY
 
+Windows v1 features:
+
+- Always-on-top floating widget window
+- Editable currency pairs and refresh interval
+- Local settings saved under `%LOCALAPPDATA%\RatePulse`
+- Local rate cache for startup/offline display
+- Minimize-to-tray and tray restore/exit menu
+
 ## Run the Windows widget
 
 ```powershell
