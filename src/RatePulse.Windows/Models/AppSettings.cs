@@ -13,15 +13,21 @@ public sealed class AppSettings
 
     public int RefreshIntervalMinutes { get; set; } = 5;
 
+    public decimal ConverterAmount { get; set; } = 1000m;
+
+    public string ConverterSourceCurrency { get; set; } = "CNY";
+
+    public string ConverterTargetCurrency { get; set; } = "JPY";
+
     public bool IsTopmost { get; set; } = true;
 
     public double WindowLeft { get; set; } = double.NaN;
 
     public double WindowTop { get; set; } = double.NaN;
 
-    public double WindowWidth { get; set; } = 300;
+    public double WindowWidth { get; set; } = 340;
 
-    public double WindowHeight { get; set; } = 360;
+    public double WindowHeight { get; set; } = 560;
 
     public AppSettings Clone()
     {
@@ -29,6 +35,9 @@ public sealed class AppSettings
         {
             CurrencyPairs = [.. CurrencyPairs],
             RefreshIntervalMinutes = RefreshIntervalMinutes,
+            ConverterAmount = ConverterAmount,
+            ConverterSourceCurrency = ConverterSourceCurrency,
+            ConverterTargetCurrency = ConverterTargetCurrency,
             IsTopmost = IsTopmost,
             WindowLeft = WindowLeft,
             WindowTop = WindowTop,
@@ -51,7 +60,16 @@ public sealed class AppSettings
         }
 
         RefreshIntervalMinutes = Math.Clamp(RefreshIntervalMinutes, 1, 1440);
-        WindowWidth = Math.Clamp(WindowWidth, 280, 1000);
-        WindowHeight = Math.Clamp(WindowHeight, 320, 1200);
+        ConverterAmount = Math.Max(0, ConverterAmount);
+        ConverterSourceCurrency = NormalizeCurrencyCode(ConverterSourceCurrency, "CNY");
+        ConverterTargetCurrency = NormalizeCurrencyCode(ConverterTargetCurrency, "JPY");
+        WindowWidth = Math.Clamp(WindowWidth, 320, 1000);
+        WindowHeight = Math.Clamp(WindowHeight, 500, 1200);
+    }
+
+    private static string NormalizeCurrencyCode(string? currencyCode, string fallback)
+    {
+        var normalized = currencyCode?.Trim().ToUpperInvariant();
+        return normalized is { Length: 3 } ? normalized : fallback;
     }
 }

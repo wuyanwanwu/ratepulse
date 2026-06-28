@@ -16,7 +16,10 @@ The exchange-rate code is isolated in `ExchangeRateService` so the provider can 
 Settings and cache data are stored under `%LOCALAPPDATA%\RatePulse`.
 
 - `settings.json` stores currency pairs, refresh interval, topmost state, and window placement.
-- `rate-cache.json` stores the last successful quote set so the widget can render cached data on startup or when offline.
+- `settings.json` also stores the last converter amount, source currency, and target currency.
+- `rate-cache.json` stores the last successful quote set and USD bridge conversion so the widget can render cached data on startup or when offline.
+
+The converter always uses USD as the bridge currency. For example, `1000 CNY` to `JPY` is calculated as `1000 / USD_CNY * USD_JPY`.
 
 ## Android follow-up
 

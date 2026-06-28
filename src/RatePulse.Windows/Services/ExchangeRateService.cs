@@ -25,6 +25,52 @@ public sealed class ExchangeRateService
         return quotes;
     }
 
+    public async Task<CurrencyConversion> ConvertViaUsdAsync(
+        decimal sourceAmount,
+        string sourceCurrency,
+        string targetCurrency,
+        CancellationToken cancellationToken = default)
+    {
+        sourceCurrency = sourceCurrency.Trim().ToUpperInvariant();
+        targetCurrency = targetCurrency.Trim().ToUpperInvariant();
+
+        if (sourceCurrency.Length != 3 || targetCurrency.Length != 3)
+        {
+            throw new InvalidOperationException("Currency codes must use three letters, for example CNY or JPY.");
+        }
+
+        if (sourceAmount < 0)
+        {
+            throw new InvalidOperationException("Amount cannot be negative.");
+        }
+
+        var ratesByBaseCurrency = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+        var usdRoot = await GetRatesDocumentAsync("USD", ratesByBaseCurrency, cancellationToken);
+        var updatedAt = GetUpdatedAt(usdRoot);
+        var usdToSourceRate = GetUsdRate(usdRoot, sourceCurrency);
+        var usdToTargetRate = GetUsdRate(usdRoot, targetCurrency);
+        var usdAmount = sourceCurrency.Equals("USD", StringComparison.OrdinalIgnoreCase)
+            ? sourceAmount
+            : sourceAmount / usdToSourceRate;
+        var targetAmount = targetCurrency.Equals("USD", StringComparison.OrdinalIgnoreCase)
+            ? usdAmount
+            : usdAmount * usdToTargetRate;
+
+        return new CurrencyConversion
+        {
+            SourceAmount = sourceAmount,
+            SourceCurrency = sourceCurrency,
+            UsdAmount = usdAmount,
+            TargetAmount = targetAmount,
+            TargetCurrency = targetCurrency,
+            UsdToSourceRate = usdToSourceRate,
+            UsdToTargetRate = usdToTargetRate,
+            UpdatedAt = updatedAt,
+            Source = "open.er-api",
+            IsCached = false
+        };
+    }
+
     private static async Task<ExchangeRateQuote> GetQuoteAsync(
         string pair,
         Dictionary<string, JsonElement> ratesByBaseCurrency,
@@ -46,12 +92,7 @@ public sealed class ExchangeRateService
         }
 
         var rate = rateElement.GetDecimal();
-        var updatedAt = DateTimeOffset.UtcNow;
-
-        if (root.TryGetProperty("time_last_update_unix", out var unixElement) && unixElement.TryGetInt64(out var unixTime))
-        {
-            updatedAt = DateTimeOffset.FromUnixTimeSeconds(unixTime);
-        }
+        var updatedAt = GetUpdatedAt(root);
 
         return new ExchangeRateQuote
         {
@@ -61,6 +102,31 @@ public sealed class ExchangeRateService
             Source = "open.er-api",
             IsCached = false
         };
+    }
+
+    private static decimal GetUsdRate(JsonElement usdRoot, string currency)
+    {
+        if (currency.Equals("USD", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1m;
+        }
+
+        if (!usdRoot.TryGetProperty("rates", out var rates) || !rates.TryGetProperty(currency, out var rateElement))
+        {
+            throw new InvalidOperationException($"Missing USD rate for {currency}");
+        }
+
+        return rateElement.GetDecimal();
+    }
+
+    private static DateTimeOffset GetUpdatedAt(JsonElement root)
+    {
+        if (root.TryGetProperty("time_last_update_unix", out var unixElement) && unixElement.TryGetInt64(out var unixTime))
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(unixTime);
+        }
+
+        return DateTimeOffset.UtcNow;
     }
 
     private static async Task<JsonElement> GetRatesDocumentAsync(

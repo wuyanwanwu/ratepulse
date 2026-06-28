@@ -12,6 +12,7 @@ Current scaffold:
 Windows v1 features:
 
 - Always-on-top floating widget window
+- USD bridge converter for one source amount and one target currency
 - Editable currency pairs and refresh interval
 - Local settings saved under `%LOCALAPPDATA%\RatePulse`
 - Local rate cache for startup/offline display
