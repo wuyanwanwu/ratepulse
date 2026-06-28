@@ -41,6 +41,7 @@ public partial class MainWindow : Window
         settings = await settingsService.LoadAsync();
         ApplySettingsToWindow();
         ApplyConverterSettingsToInputs();
+        ApplyLanguage();
         UpdateFooterText();
 
         trayIconService = new TrayIconService(this);
@@ -93,10 +94,13 @@ public partial class MainWindow : Window
         settings.CurrencyPairs = settingsWindow.Settings.CurrencyPairs;
         settings.RefreshIntervalMinutes = settingsWindow.Settings.RefreshIntervalMinutes;
         settings.IsTopmost = settingsWindow.Settings.IsTopmost;
+        settings.UiLanguage = settingsWindow.Settings.UiLanguage;
         await SaveCurrentSettingsAsync();
 
         ApplySettingsToWindow();
+        ApplyLanguage();
         UpdateFooterText();
+        RefreshDisplayLanguage();
         ConfigureRefreshTimer();
         await RefreshRatesAsync();
     }
@@ -172,12 +176,12 @@ public partial class MainWindow : Window
         }
         else
         {
-            ClearConversion("Enter an amount and convert via USD.");
+            ClearConversion(Text("Enter an amount and convert via USD.", "输入金额后通过美元中转换算。"));
         }
 
         StatusText.Text = hasCachedData
-            ? "Showing cached data while refreshing..."
-            : "No cached data yet.";
+            ? Text("Showing cached data while refreshing...", "正在显示缓存数据并刷新...")
+            : Text("No cached data yet.", "暂无缓存数据。");
     }
 
     private async Task RefreshRatesAsync()
@@ -193,7 +197,7 @@ public partial class MainWindow : Window
         }
 
         isRefreshing = true;
-        StatusText.Text = "Refreshing...";
+        StatusText.Text = Text("Refreshing...", "正在刷新...");
 
         try
         {
@@ -211,7 +215,7 @@ public partial class MainWindow : Window
             SetRates(quotes);
             ShowConversion(currentConversion);
             await rateCacheService.SaveAsync(quotes, currentConversion);
-            StatusText.Text = $"Updated {DateTime.Now:HH:mm:ss}";
+            StatusText.Text = Text($"Updated {DateTime.Now:HH:mm:ss}", $"已更新 {DateTime.Now:HH:mm:ss}");
         }
         catch (Exception ex)
         {
@@ -225,11 +229,11 @@ public partial class MainWindow : Window
                     ShowConversion(currentConversion);
                 }
 
-                StatusText.Text = $"Offline, showing cached data. {ex.Message}";
+                StatusText.Text = Text($"Offline, showing cached data. {ex.Message}", $"网络不可用，正在显示缓存数据。{ex.Message}");
             }
             else
             {
-                StatusText.Text = $"Refresh failed: {ex.Message}";
+                StatusText.Text = Text($"Refresh failed: {ex.Message}", $"刷新失败：{ex.Message}");
             }
         }
         finally
@@ -240,20 +244,23 @@ public partial class MainWindow : Window
 
     private void SetRates(IEnumerable<ExchangeRateQuote> quotes)
     {
+        var quoteList = quotes.ToList();
         Rates.Clear();
 
-        foreach (var quote in quotes)
+        foreach (var quote in quoteList)
         {
-            Rates.Add(quote);
+            var displayPair = CurrencyDisplayService.PairLabel(quote.Pair, settings.UiLanguage);
+            var displayState = quote.IsCached ? Text("cached", "缓存") : Text("fresh", "最新");
+            Rates.Add(quote.WithDisplayText(displayPair, displayState));
         }
     }
 
     private void ShowConversion(CurrencyConversion conversion)
     {
-        ConversionSourceText.Text = conversion.SourceDisplayText;
-        ConversionUsdText.Text = conversion.UsdDisplayText;
-        ConversionTargetText.Text = conversion.TargetDisplayText;
-        ConversionMetaText.Text = $"{conversion.RateSummaryText}  {conversion.UpdatedAtText}  {conversion.Source}  {conversion.DataStateText}";
+        ConversionSourceText.Text = FormatCurrencyAmount(conversion.SourceAmount, conversion.SourceCurrency);
+        ConversionUsdText.Text = FormatCurrencyAmount(conversion.UsdAmount, "USD");
+        ConversionTargetText.Text = FormatCurrencyAmount(conversion.TargetAmount, conversion.TargetCurrency);
+        ConversionMetaText.Text = FormatConversionMeta(conversion);
     }
 
     private void ClearConversion(string message)
@@ -297,8 +304,10 @@ public partial class MainWindow : Window
 
     private void UpdateFooterText()
     {
-        RefreshIntervalText.Text = $"Auto refresh: {settings.RefreshIntervalMinutes} min";
-        TopmostText.Text = settings.IsTopmost ? "Always on top" : "Normal window";
+        RefreshIntervalText.Text = Text($"Auto refresh: {settings.RefreshIntervalMinutes} min", $"自动刷新：{settings.RefreshIntervalMinutes} 分钟");
+        TopmostText.Text = settings.IsTopmost
+            ? Text("Always on top", "窗口置顶")
+            : Text("Normal window", "普通窗口");
     }
 
     private bool TryCaptureConverterSettings(bool showErrors)
@@ -307,7 +316,7 @@ public partial class MainWindow : Window
         {
             if (showErrors)
             {
-                StatusText.Text = "Enter a valid non-negative amount.";
+                StatusText.Text = Text("Enter a valid non-negative amount.", "请输入有效的非负金额。");
             }
 
             return false;
@@ -320,7 +329,7 @@ public partial class MainWindow : Window
         {
             if (showErrors)
             {
-                StatusText.Text = "Currency codes must be 3 letters, for example CNY or JPY.";
+                StatusText.Text = Text("Currency codes must be 3 letters, for example CNY or JPY.", "货币代码必须是 3 个字母，例如 CNY 或 JPY。");
             }
 
             return false;
@@ -350,7 +359,47 @@ public partial class MainWindow : Window
     {
         Hide();
         WindowState = WindowState.Normal;
-        trayIconService?.ShowInfo("RatePulse", "RatePulse is still running in the tray.");
+        trayIconService?.ShowInfo("RatePulse", Text("RatePulse is still running in the tray.", "RatePulse 仍在托盘中运行。"));
+    }
+
+    private void ApplyLanguage()
+    {
+        SettingsButton.ToolTip = Text("Settings", "设置");
+        RefreshButton.ToolTip = Text("Refresh rates and conversion", "刷新汇率和换算结果");
+        MinimizeButton.ToolTip = Text("Minimize to tray", "最小化到托盘");
+        CloseButton.ToolTip = Text("Exit", "退出");
+        ConverterTitleText.Text = Text("USD bridge converter", "美元中转换算");
+        ConvertButton.Content = Text("Convert", "换算");
+        ViaUsdText.Text = Text("via USD", "经由 美元 (USD)");
+        WatchlistTitleText.Text = Text("Watchlist", "关注汇率");
+    }
+
+    private void RefreshDisplayLanguage()
+    {
+        SetRates(Rates.ToList());
+
+        if (currentConversion is not null)
+        {
+            ShowConversion(currentConversion);
+        }
+    }
+
+    private string FormatCurrencyAmount(decimal amount, string currencyCode)
+    {
+        return $"{amount:0.####} {CurrencyDisplayService.CurrencyLabel(currencyCode, settings.UiLanguage)}";
+    }
+
+    private string FormatConversionMeta(CurrencyConversion conversion)
+    {
+        var sourceRateLabel = $"USD/{CurrencyDisplayService.CurrencyLabel(conversion.SourceCurrency, settings.UiLanguage)}";
+        var targetRateLabel = $"USD/{CurrencyDisplayService.CurrencyLabel(conversion.TargetCurrency, settings.UiLanguage)}";
+        var dataState = conversion.IsCached ? Text("cached", "缓存") : Text("fresh", "最新");
+        return $"{sourceRateLabel}: {conversion.UsdToSourceRate:0.####}  {targetRateLabel}: {conversion.UsdToTargetRate:0.####}  {conversion.UpdatedAtText}  {conversion.Source}  {dataState}";
+    }
+
+    private string Text(string english, string chinese)
+    {
+        return CurrencyDisplayService.IsChinese(settings.UiLanguage) ? chinese : english;
     }
 
     private static bool IsInsideInteractiveElement(DependencyObject? source)

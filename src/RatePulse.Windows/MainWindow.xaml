@@ -71,6 +71,7 @@
 
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
                     <Button Width="30"
+                            x:Name="SettingsButton"
                             Height="30"
                             Margin="0,0,6,0"
                             Style="{StaticResource ChromeButton}"
@@ -78,6 +79,7 @@
                             ToolTip="Settings"
                             Content="S" />
                     <Button Width="30"
+                            x:Name="RefreshButton"
                             Height="30"
                             Margin="0,0,6,0"
                             Style="{StaticResource ChromeButton}"
@@ -85,6 +87,7 @@
                             ToolTip="Refresh rates and conversion"
                             Content="R" />
                     <Button Width="30"
+                            x:Name="MinimizeButton"
                             Height="30"
                             Margin="0,0,6,0"
                             Style="{StaticResource ChromeButton}"
@@ -92,6 +95,7 @@
                             ToolTip="Minimize to tray"
                             Content="_" />
                     <Button Width="30"
+                            x:Name="CloseButton"
                             Height="30"
                             Style="{StaticResource ChromeButton}"
                             Click="CloseButton_Click"
@@ -121,7 +125,8 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="USD bridge converter"
+                    <TextBlock x:Name="ConverterTitleText"
+                               Text="USD bridge converter"
                                Foreground="#F4F7FB"
                                FontSize="14"
                                FontWeight="SemiBold" />
@@ -155,6 +160,7 @@
                                  ToolTip="Target currency"
                                  TextChanged="ConverterInput_Changed" />
                         <Button Grid.Column="3"
+                                x:Name="ConvertButton"
                                 Margin="6,0,0,0"
                                 Content="Convert"
                                 Click="ConvertButton_Click" />
@@ -164,7 +170,8 @@
                         <TextBlock x:Name="ConversionSourceText"
                                    Foreground="#D7DCE7"
                                    FontSize="13" />
-                        <TextBlock Text="via USD"
+                        <TextBlock x:Name="ViaUsdText"
+                                   Text="via USD"
                                    Margin="0,4,0,4"
                                    Foreground="#8D96A8"
                                    FontSize="11" />
@@ -187,6 +194,7 @@
             </Border>
 
             <TextBlock Grid.Row="3"
+                       x:Name="WatchlistTitleText"
                        Text="Watchlist"
                        Foreground="#D7DCE7"
                        FontSize="13"
@@ -209,7 +217,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Pair}"
+                                        <TextBlock Text="{Binding DisplayPair}"
                                                    Foreground="#F4F7FB"
                                                    FontSize="14"
                                                    FontWeight="SemiBold" />
@@ -230,7 +238,7 @@
                                                        Foreground="#7C8495"
                                                        FontSize="10"
                                                        TextAlignment="Right" />
-                                            <TextBlock Text="{Binding DataStateText}"
+                                            <TextBlock Text="{Binding DisplayDataState}"
                                                        Margin="0,3,0,0"
                                                        Foreground="#B2BAC9"
                                                        FontSize="10"

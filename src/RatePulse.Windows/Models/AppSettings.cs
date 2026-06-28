@@ -13,6 +13,8 @@ public sealed class AppSettings
 
     public int RefreshIntervalMinutes { get; set; } = 5;
 
+    public string UiLanguage { get; set; } = "en";
+
     public decimal ConverterAmount { get; set; } = 1000m;
 
     public string ConverterSourceCurrency { get; set; } = "CNY";
@@ -35,6 +37,7 @@ public sealed class AppSettings
         {
             CurrencyPairs = [.. CurrencyPairs],
             RefreshIntervalMinutes = RefreshIntervalMinutes,
+            UiLanguage = UiLanguage,
             ConverterAmount = ConverterAmount,
             ConverterSourceCurrency = ConverterSourceCurrency,
             ConverterTargetCurrency = ConverterTargetCurrency,
@@ -60,6 +63,7 @@ public sealed class AppSettings
         }
 
         RefreshIntervalMinutes = Math.Clamp(RefreshIntervalMinutes, 1, 1440);
+        UiLanguage = UiLanguage.Equals("zh", StringComparison.OrdinalIgnoreCase) ? "zh" : "en";
         ConverterAmount = Math.Max(0, ConverterAmount);
         ConverterSourceCurrency = NormalizeCurrencyCode(ConverterSourceCurrency, "CNY");
         ConverterTargetCurrency = NormalizeCurrencyCode(ConverterTargetCurrency, "JPY");

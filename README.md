@@ -13,6 +13,7 @@ Windows v1 features:
 
 - Always-on-top floating widget window
 - USD bridge converter for one source amount and one target currency
+- English/Chinese UI selection with Chinese-English currency labels
 - Editable currency pairs and refresh interval
 - Local settings saved under `%LOCALAPPDATA%\RatePulse`
 - Local rate cache for startup/offline display

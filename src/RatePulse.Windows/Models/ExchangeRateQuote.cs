@@ -15,6 +15,18 @@ public sealed class ExchangeRateQuote
     public bool IsCached { get; init; }
 
     [JsonIgnore]
+    public string? DisplayPairOverride { get; init; }
+
+    [JsonIgnore]
+    public string? DisplayDataStateOverride { get; init; }
+
+    [JsonIgnore]
+    public string DisplayPair => DisplayPairOverride ?? Pair;
+
+    [JsonIgnore]
+    public string DisplayDataState => DisplayDataStateOverride ?? DataStateText;
+
+    [JsonIgnore]
     public string RateText => Rate.ToString("0.####");
 
     [JsonIgnore]
@@ -31,7 +43,23 @@ public sealed class ExchangeRateQuote
             Rate = Rate,
             UpdatedAt = UpdatedAt,
             Source = Source,
-            IsCached = isCached
+            IsCached = isCached,
+            DisplayPairOverride = DisplayPairOverride,
+            DisplayDataStateOverride = DisplayDataStateOverride
+        };
+    }
+
+    public ExchangeRateQuote WithDisplayText(string displayPair, string displayDataState)
+    {
+        return new ExchangeRateQuote
+        {
+            Pair = Pair,
+            Rate = Rate,
+            UpdatedAt = UpdatedAt,
+            Source = Source,
+            IsCached = IsCached,
+            DisplayPairOverride = displayPair,
+            DisplayDataStateOverride = displayDataState
         };
     }
 }

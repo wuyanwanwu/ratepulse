@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="RatePulse Settings"
         Width="360"
-        Height="430"
+        Height="480"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#1D2029">
@@ -16,17 +16,20 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Settings"
+            <TextBlock x:Name="SettingsTitleText"
+                       Text="Settings"
                        Foreground="#F4F7FB"
                        FontSize="22"
                        FontWeight="SemiBold" />
 
             <StackPanel Grid.Row="1" Margin="0,18,0,12">
-                <TextBlock Text="Currency pairs"
+                <TextBlock x:Name="CurrencyPairsLabel"
+                           Text="Currency pairs"
                            Foreground="#D7DCE7"
                            FontSize="13"
                            FontWeight="SemiBold" />
-                <TextBlock Text="One pair per line, like USD/CNY."
+                <TextBlock x:Name="CurrencyPairsHint"
+                           Text="One pair per line, like USD/CNY."
                            Margin="0,4,0,8"
                            Foreground="#8D96A8"
                            FontSize="12" />
@@ -44,13 +47,34 @@
                      FontSize="13" />
 
             <StackPanel Grid.Row="3" Margin="0,16,0,0">
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="132" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="LanguageLabel"
+                               Text="Language"
+                               Foreground="#D7DCE7"
+                               VerticalAlignment="Center" />
+
+                    <ComboBox Grid.Column="1"
+                              x:Name="LanguageComboBox"
+                              SelectedValuePath="Tag"
+                              SelectionChanged="LanguageComboBox_SelectionChanged">
+                        <ComboBoxItem Content="English" Tag="en" />
+                        <ComboBoxItem Content="中文" Tag="zh" />
+                    </ComboBox>
+                </Grid>
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="96" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="Refresh interval (minutes)"
+                    <TextBlock x:Name="RefreshIntervalLabel"
+                               Text="Refresh interval (minutes)"
                                Foreground="#D7DCE7"
                                VerticalAlignment="Center" />
 
@@ -76,12 +100,14 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             Margin="0,14,0,0">
-                    <Button Content="Cancel"
+                    <Button x:Name="CancelButton"
+                            Content="Cancel"
                             Width="84"
                             Height="32"
                             Margin="0,0,8,0"
                             Click="CancelButton_Click" />
-                    <Button Content="Save"
+                    <Button x:Name="SaveButton"
+                            Content="Save"
                             Width="84"
                             Height="32"
                             Click="SaveButton_Click" />
