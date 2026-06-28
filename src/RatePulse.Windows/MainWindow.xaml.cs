@@ -57,6 +57,17 @@ public partial class MainWindow : Window
         await RefreshRatesAsync();
     }
 
+    private async void LanguageButton_Click(object sender, RoutedEventArgs e)
+    {
+        settings.UiLanguage = CurrencyDisplayService.IsChinese(settings.UiLanguage) ? "en" : "zh";
+        await SaveCurrentSettingsAsync();
+
+        ApplyLanguage();
+        UpdateFooterText();
+        RefreshDisplayLanguage();
+        StatusText.Text = Text("Language switched to English.", "已切换为中文。");
+    }
+
     private async void ConvertButton_Click(object sender, RoutedEventArgs e)
     {
         if (TryCaptureConverterSettings(showErrors: true))
@@ -364,6 +375,8 @@ public partial class MainWindow : Window
 
     private void ApplyLanguage()
     {
+        LanguageButton.Content = CurrencyDisplayService.IsChinese(settings.UiLanguage) ? "EN" : "ZH";
+        LanguageButton.ToolTip = Text("Switch to Chinese", "切换到英文");
         SettingsButton.ToolTip = Text("Settings", "设置");
         RefreshButton.ToolTip = Text("Refresh rates and conversion", "刷新汇率和换算结果");
         MinimizeButton.ToolTip = Text("Minimize to tray", "最小化到托盘");
