@@ -7,12 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using WpfButton = System.Windows.Controls.Button;
-using WpfColor = System.Windows.Media.Color;
 using WpfComboBox = System.Windows.Controls.ComboBox;
-using WpfPoint = System.Windows.Point;
 using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace RatePulse.Windows;
@@ -27,12 +24,11 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer refreshTimer = new();
     private readonly DispatcherTimer placementSaveTimer = new();
     private readonly Dictionary<string, RateHistory> historiesByPair = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HistoryWindow> historyWindowsByPair = new(StringComparer.OrdinalIgnoreCase);
 
     private AppSettings settings = new();
     private CurrencyConversion? currentConversion;
-    private RateHistory? currentHistory;
     private TrayIconService? trayIconService;
-    private CancellationTokenSource? historyCancellation;
     private bool isRefreshing;
     private bool isExitRequested;
     private bool isLoaded;
@@ -123,6 +119,7 @@ public partial class MainWindow : Window
 
         if (TryCaptureConverterSettings(showErrors: false))
         {
+            NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox);
             await SaveCurrentSettingsAsync();
             await RefreshRatesAsync();
         }
@@ -137,6 +134,11 @@ public partial class MainWindow : Window
 
         if (TryCaptureConverterSettings(showErrors: e.Key == Key.Enter))
         {
+            if (e.Key == Key.Enter)
+            {
+                NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox);
+            }
+
             await SaveCurrentSettingsAsync();
 
             if (e.Key == Key.Enter)
@@ -155,6 +157,7 @@ public partial class MainWindow : Window
 
         if (TryCaptureConverterSettings(showErrors: false))
         {
+            NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox);
             await SaveCurrentSettingsAsync();
         }
     }
@@ -206,11 +209,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void HistoryChartCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        DrawHistoryChart(currentHistory);
-    }
-
     private void Window_StateChanged(object sender, EventArgs e)
     {
         if (WindowState == WindowState.Minimized)
@@ -230,7 +228,11 @@ public partial class MainWindow : Window
 
         refreshTimer.Stop();
         placementSaveTimer.Stop();
-        historyCancellation?.Cancel();
+        foreach (var historyWindow in historyWindowsByPair.Values.ToList())
+        {
+            historyWindow.Close();
+        }
+
         trayIconService?.Dispose();
         CaptureWindowPlacement();
         settingsService.Save(settings);
@@ -380,53 +382,62 @@ public partial class MainWindow : Window
         }
 
         var pair = $"USD/{quoteCurrency}";
-        HistoryPanel.Visibility = Visibility.Visible;
+        var historyWindow = GetOrCreateHistoryWindow(pair);
+        historyWindow.Show();
+        historyWindow.Activate();
 
         if (historiesByPair.TryGetValue(pair, out var cachedHistory))
         {
-            ShowHistory(cachedHistory);
+            historyWindow.ShowHistory(cachedHistory);
         }
         else
         {
-            ShowHistoryLoading(pair);
+            historyWindow.ShowLoading();
         }
-
-        historyCancellation?.Cancel();
-        historyCancellation = new CancellationTokenSource();
 
         try
         {
             var freshHistory = await exchangeRateService.GetUsdHistoryAsync(
                 quoteCurrency,
-                HistoryDays,
-                historyCancellation.Token);
+                HistoryDays);
 
             historiesByPair[pair] = freshHistory;
-            ShowHistory(freshHistory);
+            if (historyWindowsByPair.TryGetValue(pair, out var activeWindow) && ReferenceEquals(activeWindow, historyWindow))
+            {
+                activeWindow.ShowHistory(freshHistory);
+            }
+
             await rateCacheService.SaveAsync(Rates, currentConversion, historiesByPair.Values);
-        }
-        catch (OperationCanceledException)
-        {
         }
         catch (Exception ex)
         {
             if (historiesByPair.TryGetValue(pair, out var fallbackHistory))
             {
-                ShowHistory(fallbackHistory.WithCacheState(true));
-                HistoryStatusText.Text = Text("cached/offline", "缓存/离线");
-                HistoryRangeText.Text = Text(
-                    $"Could not refresh chart: {ex.Message}",
-                    $"曲线刷新失败：{ex.Message}");
+                historyWindow.ShowFailure(ex.Message, fallbackHistory);
             }
             else
             {
-                HistoryStatusText.Text = Text("failed", "失败");
-                HistoryRangeText.Text = Text(
-                    $"Could not load chart: {ex.Message}",
-                    $"无法加载曲线：{ex.Message}");
-                HistoryChartCanvas.Children.Clear();
+                historyWindow.ShowFailure(ex.Message);
             }
         }
+    }
+
+    private HistoryWindow GetOrCreateHistoryWindow(string pair)
+    {
+        if (historyWindowsByPair.TryGetValue(pair, out var existingWindow))
+        {
+            return existingWindow;
+        }
+
+        var historyWindow = new HistoryWindow(pair, settings.UiLanguage)
+        {
+            Owner = this,
+            Topmost = Topmost
+        };
+
+        historyWindow.Closed += (_, _) => historyWindowsByPair.Remove(pair);
+        historyWindowsByPair[pair] = historyWindow;
+        return historyWindow;
     }
 
     private void SetRates(IEnumerable<ExchangeRateQuote> quotes)
@@ -458,158 +469,6 @@ public partial class MainWindow : Window
         ConversionMetaText.Text = string.Empty;
     }
 
-    private void ShowHistoryLoading(string pair)
-    {
-        currentHistory = null;
-        HistoryTitleText.Text = FormatHistoryTitle(pair);
-        HistoryStatusText.Text = Text("loading...", "加载中...");
-        HistoryRangeText.Text = string.Empty;
-        HistoryChartCanvas.Children.Clear();
-    }
-
-    private void ShowHistory(RateHistory history)
-    {
-        currentHistory = history;
-        HistoryTitleText.Text = FormatHistoryTitle(history.Pair);
-        HistoryStatusText.Text = history.IsCached
-            ? Text("cached", "缓存")
-            : Text("fresh", "最新");
-
-        var orderedPoints = history.Points.OrderBy(point => point.Date).ToList();
-        if (orderedPoints.Count > 0)
-        {
-            var first = orderedPoints[0];
-            var last = orderedPoints[^1];
-            HistoryRangeText.Text = Text(
-                $"{first.Date:MM-dd} to {last.Date:MM-dd} · latest {last.Rate:0.####} · {history.Source}",
-                $"{first.Date:MM-dd} 至 {last.Date:MM-dd} · 最新 {last.Rate:0.####} · {history.Source}");
-        }
-        else
-        {
-            HistoryRangeText.Text = Text("No chart points.", "暂无曲线点位。");
-        }
-
-        DrawHistoryChart(history);
-    }
-
-    private void DrawHistoryChart(RateHistory? history)
-    {
-        HistoryChartCanvas.Children.Clear();
-        if (history is null)
-        {
-            return;
-        }
-
-        var points = history.Points.OrderBy(point => point.Date).ToList();
-        if (points.Count == 0)
-        {
-            return;
-        }
-
-        var width = HistoryChartCanvas.ActualWidth;
-        var height = HistoryChartCanvas.ActualHeight;
-        if (width < 120 || height < 80)
-        {
-            return;
-        }
-
-        const double left = 48;
-        const double right = 12;
-        const double top = 12;
-        const double bottom = 24;
-
-        var plotWidth = Math.Max(1, width - left - right);
-        var plotHeight = Math.Max(1, height - top - bottom);
-        var minRate = points.Min(point => point.Rate);
-        var maxRate = points.Max(point => point.Rate);
-
-        if (minRate == maxRate)
-        {
-            minRate -= 0.01m;
-            maxRate += 0.01m;
-        }
-
-        var gridBrush = new SolidColorBrush(WpfColor.FromRgb(48, 56, 75));
-        var labelBrush = new SolidColorBrush(WpfColor.FromRgb(141, 150, 168));
-        var lineBrush = new SolidColorBrush(WpfColor.FromRgb(123, 227, 162));
-
-        for (var index = 0; index < 3; index++)
-        {
-            var y = top + plotHeight * index / 2;
-            var rate = maxRate - (maxRate - minRate) * index / 2;
-
-            HistoryChartCanvas.Children.Add(new Line
-            {
-                X1 = left,
-                Y1 = y,
-                X2 = width - right,
-                Y2 = y,
-                Stroke = gridBrush,
-                StrokeThickness = 1
-            });
-
-            var label = new TextBlock
-            {
-                Text = rate.ToString("0.####"),
-                Foreground = labelBrush,
-                FontSize = 10,
-                Width = left - 6,
-                TextAlignment = TextAlignment.Right
-            };
-            Canvas.SetLeft(label, 0);
-            Canvas.SetTop(label, Math.Max(0, y - 8));
-            HistoryChartCanvas.Children.Add(label);
-        }
-
-        var polyline = new Polyline
-        {
-            Stroke = lineBrush,
-            StrokeThickness = 2
-        };
-
-        for (var index = 0; index < points.Count; index++)
-        {
-            var x = points.Count == 1
-                ? left + plotWidth
-                : left + plotWidth * index / (points.Count - 1);
-            var rateOffset = (double)((maxRate - points[index].Rate) / (maxRate - minRate));
-            var y = top + plotHeight * rateOffset;
-            polyline.Points.Add(new WpfPoint(x, y));
-        }
-
-        HistoryChartCanvas.Children.Add(polyline);
-
-        var lastPoint = polyline.Points[^1];
-        var dot = new Ellipse
-        {
-            Width = 7,
-            Height = 7,
-            Fill = lineBrush
-        };
-        Canvas.SetLeft(dot, lastPoint.X - 3.5);
-        Canvas.SetTop(dot, lastPoint.Y - 3.5);
-        HistoryChartCanvas.Children.Add(dot);
-
-        AddChartDateLabel(points[0].Date, left, height - bottom + 6, TextAlignment.Left);
-        AddChartDateLabel(points[^1].Date, width - right - 56, height - bottom + 6, TextAlignment.Right);
-    }
-
-    private void AddChartDateLabel(DateOnly date, double left, double top, TextAlignment alignment)
-    {
-        var label = new TextBlock
-        {
-            Text = date.ToString("MM-dd", CultureInfo.InvariantCulture),
-            Foreground = new SolidColorBrush(WpfColor.FromRgb(141, 150, 168)),
-            FontSize = 10,
-            Width = 56,
-            TextAlignment = alignment
-        };
-
-        Canvas.SetLeft(label, left);
-        Canvas.SetTop(label, top);
-        HistoryChartCanvas.Children.Add(label);
-    }
-
     private void ApplySettingsToWindow()
     {
         Topmost = settings.IsTopmost;
@@ -629,6 +488,8 @@ public partial class MainWindow : Window
         var options = CurrencyDisplayService.CurrencyOptions(settings.UiLanguage);
         ConverterSourceComboBox.ItemsSource = options;
         ConverterTargetComboBox.ItemsSource = options;
+        ConverterSourceComboBox.SelectedValue = settings.ConverterSourceCurrency;
+        ConverterTargetComboBox.SelectedValue = settings.ConverterTargetCurrency;
         isApplyingSettings = false;
     }
 
@@ -636,8 +497,8 @@ public partial class MainWindow : Window
     {
         isApplyingSettings = true;
         ConverterAmountTextBox.Text = settings.ConverterAmount.ToString("0.####", CultureInfo.InvariantCulture);
-        ConverterSourceComboBox.Text = CurrencyDisplayService.CurrencyLabel(settings.ConverterSourceCurrency, settings.UiLanguage);
-        ConverterTargetComboBox.Text = CurrencyDisplayService.CurrencyLabel(settings.ConverterTargetCurrency, settings.UiLanguage);
+        SetCurrencyComboBoxValue(ConverterSourceComboBox, settings.ConverterSourceCurrency);
+        SetCurrencyComboBoxValue(ConverterTargetComboBox, settings.ConverterTargetCurrency);
         isApplyingSettings = false;
     }
 
@@ -668,8 +529,8 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var sourceCurrency = CurrencyDisplayService.ExtractCurrencyCode(ConverterSourceComboBox.Text);
-        var targetCurrency = CurrencyDisplayService.ExtractCurrencyCode(ConverterTargetComboBox.Text);
+        var sourceCurrency = ExtractCurrencyCode(ConverterSourceComboBox);
+        var targetCurrency = ExtractCurrencyCode(ConverterTargetComboBox);
 
         if (sourceCurrency.Length != 3 || targetCurrency.Length != 3)
         {
@@ -685,6 +546,62 @@ public partial class MainWindow : Window
         settings.ConverterSourceCurrency = sourceCurrency;
         settings.ConverterTargetCurrency = targetCurrency;
         return true;
+    }
+
+    private void NormalizeCurrencyComboBoxDisplay(WpfComboBox? comboBox)
+    {
+        if (comboBox is null)
+        {
+            return;
+        }
+
+        var currencyCode = ExtractCurrencyCode(comboBox);
+        if (currencyCode.Length == 3)
+        {
+            isApplyingSettings = true;
+            try
+            {
+                SetCurrencyComboBoxValue(comboBox, currencyCode);
+            }
+            finally
+            {
+                isApplyingSettings = false;
+            }
+        }
+    }
+
+    private void SetCurrencyComboBoxValue(WpfComboBox comboBox, string currencyCode)
+    {
+        var normalized = currencyCode.Trim().ToUpperInvariant();
+        comboBox.SelectedValue = normalized;
+        comboBox.Text = CurrencyDisplayService.CurrencyLabel(normalized, settings.UiLanguage);
+
+        if (comboBox.SelectedValue is not string selectedCode ||
+            !selectedCode.Equals(normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            comboBox.SelectedItem = null;
+        }
+    }
+
+    private static string ExtractCurrencyCode(WpfComboBox comboBox)
+    {
+        var textCode = CurrencyDisplayService.ExtractCurrencyCode(comboBox.Text);
+        if (textCode.Length == 3)
+        {
+            return textCode;
+        }
+
+        if (comboBox.SelectedValue is string selectedValue && selectedValue.Length == 3)
+        {
+            return selectedValue.ToUpperInvariant();
+        }
+
+        if (comboBox.SelectedItem is CurrencyOption selectedOption)
+        {
+            return selectedOption.Code.ToUpperInvariant();
+        }
+
+        return string.Empty;
     }
 
     private void CaptureWindowPlacement()
@@ -727,7 +644,6 @@ public partial class MainWindow : Window
         isExitRequested = true;
         refreshTimer.Stop();
         placementSaveTimer.Stop();
-        historyCancellation?.Cancel();
         Close();
     }
 
@@ -754,11 +670,6 @@ public partial class MainWindow : Window
         {
             ShowConversion(currentConversion);
         }
-
-        if (currentHistory is not null)
-        {
-            ShowHistory(currentHistory);
-        }
     }
 
     private string FormatCurrencyAmount(decimal amount, string currencyCode)
@@ -772,16 +683,6 @@ public partial class MainWindow : Window
         var targetRateLabel = $"USD/{CurrencyDisplayService.CurrencyLabel(conversion.TargetCurrency, settings.UiLanguage)}";
         var dataState = conversion.IsCached ? Text("cached", "缓存") : Text("fresh", "最新");
         return $"{sourceRateLabel}: {conversion.UsdToSourceRate:0.####}  {targetRateLabel}: {conversion.UsdToTargetRate:0.####}  {conversion.UpdatedAtText}  {conversion.Source}  {dataState}";
-    }
-
-    private string FormatHistoryTitle(string pair)
-    {
-        var quoteCurrency = GetUsdQuoteCurrency(pair);
-        return string.IsNullOrWhiteSpace(quoteCurrency)
-            ? CurrencyDisplayService.PairLabel(pair, settings.UiLanguage)
-            : Text(
-                $"1 USD -> {CurrencyDisplayService.CurrencyLabel(quoteCurrency, settings.UiLanguage)}",
-                $"1 美元 (USD) -> {CurrencyDisplayService.CurrencyLabel(quoteCurrency, settings.UiLanguage)}");
     }
 
     private string Text(string english, string chinese)

@@ -85,6 +85,33 @@ public sealed class ExchangeRateService
         days = Math.Clamp(days, 2, 60);
         var endDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
         var startDate = endDate.AddDays(-(days - 1));
+
+        try
+        {
+            return await GetFrankfurterV2UsdHistoryAsync(quoteCurrency, startDate, endDate, days, cancellationToken);
+        }
+        catch (Exception v2Exception) when (v2Exception is not OperationCanceledException)
+        {
+            try
+            {
+                return await GetFrankfurterClassicUsdHistoryAsync(quoteCurrency, startDate, endDate, days, cancellationToken);
+            }
+            catch (Exception classicException) when (classicException is not OperationCanceledException)
+            {
+                throw new InvalidOperationException(
+                    $"Historical rate providers failed. v2: {v2Exception.Message}; fallback: {classicException.Message}",
+                    classicException);
+            }
+        }
+    }
+
+    private static async Task<RateHistory> GetFrankfurterV2UsdHistoryAsync(
+        string quoteCurrency,
+        DateOnly startDate,
+        DateOnly endDate,
+        int days,
+        CancellationToken cancellationToken)
+    {
         var requestUri = string.Create(
             CultureInfo.InvariantCulture,
             $"https://api.frankfurter.dev/v2/rates?from={startDate:yyyy-MM-dd}&to={endDate:yyyy-MM-dd}&base=USD&quotes={Uri.EscapeDataString(quoteCurrency)}");
@@ -140,7 +167,66 @@ public sealed class ExchangeRateService
             Pair = $"USD/{quoteCurrency}",
             Points = points,
             UpdatedAt = DateTimeOffset.Now,
-            Source = "frankfurter",
+            Source = "frankfurter.dev",
+            IsCached = false
+        };
+    }
+
+    private static async Task<RateHistory> GetFrankfurterClassicUsdHistoryAsync(
+        string quoteCurrency,
+        DateOnly startDate,
+        DateOnly endDate,
+        int days,
+        CancellationToken cancellationToken)
+    {
+        var requestUri = string.Create(
+            CultureInfo.InvariantCulture,
+            $"https://api.frankfurter.app/{startDate:yyyy-MM-dd}..{endDate:yyyy-MM-dd}?from=USD&to={Uri.EscapeDataString(quoteCurrency)}");
+
+        using var response = await HttpClient.GetAsync(requestUri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+        if (!document.RootElement.TryGetProperty("rates", out var rates) || rates.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("Historical fallback response did not include rates.");
+        }
+
+        var points = new List<RateHistoryPoint>();
+        foreach (var dateProperty in rates.EnumerateObject())
+        {
+            if (!DateOnly.TryParse(dateProperty.Name, CultureInfo.InvariantCulture, out var date) ||
+                dateProperty.Value.ValueKind != JsonValueKind.Object ||
+                !dateProperty.Value.TryGetProperty(quoteCurrency, out var rateElement))
+            {
+                continue;
+            }
+
+            points.Add(new RateHistoryPoint
+            {
+                Date = date,
+                Rate = rateElement.GetDecimal()
+            });
+        }
+
+        points = points
+            .OrderBy(point => point.Date)
+            .TakeLast(days)
+            .ToList();
+
+        if (points.Count == 0)
+        {
+            throw new InvalidOperationException($"Missing fallback USD history for {quoteCurrency}.");
+        }
+
+        return new RateHistory
+        {
+            Pair = $"USD/{quoteCurrency}",
+            Points = points,
+            UpdatedAt = DateTimeOffset.Now,
+            Source = "frankfurter.app",
             IsCached = false
         };
     }

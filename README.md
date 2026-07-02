@@ -12,9 +12,9 @@ Current scaffold:
 Windows v1 features:
 
 - Always-on-top floating widget window
-- USD bridge converter for one source amount and one target currency
+- USD bridge converter for one source amount and one target currency, defaulting to CNY -> USD
 - Editable currency dropdowns with common choices and manual three-letter fallback
-- USD-based watchlist cards with click-to-load 15-day history charts
+- USD-based watchlist cards with click-to-open 15-day history chart popups
 - English/Chinese UI selection with Chinese-English currency labels
 - Editable USD watchlist and refresh interval
 - Local settings saved under `%LOCALAPPDATA%\RatePulse`

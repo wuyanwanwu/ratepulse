@@ -4,7 +4,10 @@ namespace RatePulse.Windows.Models;
 
 public sealed class AppSettings
 {
+    private const int CurrentSettingsVersion = 2;
     private static readonly Regex CurrencyCodeRegex = new("[A-Z]{3}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public int SettingsVersion { get; set; }
 
     public List<string> CurrencyPairs { get; set; } =
     [
@@ -28,7 +31,7 @@ public sealed class AppSettings
 
     public string ConverterSourceCurrency { get; set; } = "CNY";
 
-    public string ConverterTargetCurrency { get; set; } = "JPY";
+    public string ConverterTargetCurrency { get; set; } = "USD";
 
     public bool IsTopmost { get; set; } = true;
 
@@ -45,6 +48,7 @@ public sealed class AppSettings
         return new AppSettings
         {
             CurrencyPairs = [.. CurrencyPairs],
+            SettingsVersion = SettingsVersion,
             RefreshIntervalMinutes = RefreshIntervalMinutes,
             UiLanguage = UiLanguage,
             ConverterAmount = ConverterAmount,
@@ -71,11 +75,20 @@ public sealed class AppSettings
             CurrencyPairs = ["USD/CNY"];
         }
 
+        if (SettingsVersion < CurrentSettingsVersion)
+        {
+            ConverterSourceCurrency = "CNY";
+            ConverterTargetCurrency = "USD";
+            CurrencyPairs.RemoveAll(pair => pair.Equals("USD/CNY", StringComparison.OrdinalIgnoreCase));
+            CurrencyPairs.Insert(0, "USD/CNY");
+            SettingsVersion = CurrentSettingsVersion;
+        }
+
         RefreshIntervalMinutes = Math.Clamp(RefreshIntervalMinutes, 1, 1440);
         UiLanguage = UiLanguage.Equals("zh", StringComparison.OrdinalIgnoreCase) ? "zh" : "en";
         ConverterAmount = Math.Max(0, ConverterAmount);
         ConverterSourceCurrency = NormalizeCurrencyCode(ConverterSourceCurrency, "CNY");
-        ConverterTargetCurrency = NormalizeCurrencyCode(ConverterTargetCurrency, "JPY");
+        ConverterTargetCurrency = NormalizeCurrencyCode(ConverterTargetCurrency, "USD");
         WindowLeft = NormalizeWindowCoordinate(WindowLeft);
         WindowTop = NormalizeWindowCoordinate(WindowTop);
         WindowWidth = Math.Clamp(WindowWidth, 360, 1000);

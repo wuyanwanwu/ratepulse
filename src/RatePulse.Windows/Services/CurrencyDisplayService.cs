@@ -1,5 +1,7 @@
 namespace RatePulse.Windows.Services;
 
+public sealed record CurrencyOption(string Code, string DisplayName);
+
 public static class CurrencyDisplayService
 {
     public static readonly IReadOnlyList<string> CommonCurrencyCodes =
@@ -86,11 +88,11 @@ public static class CurrencyDisplayService
             : normalized;
     }
 
-    public static IReadOnlyList<string> CurrencyOptions(string language, bool includeUsd = true)
+    public static IReadOnlyList<CurrencyOption> CurrencyOptions(string language, bool includeUsd = true)
     {
         return CommonCurrencyCodes
             .Where(code => includeUsd || !code.Equals("USD", StringComparison.OrdinalIgnoreCase))
-            .Select(code => CurrencyLabel(code, language))
+            .Select(code => new CurrencyOption(code, CurrencyLabel(code, language)))
             .ToList();
     }
 
