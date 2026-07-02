@@ -261,12 +261,7 @@ public partial class HistoryWindow : Window
 
     private string FormatPointText(RateHistoryPoint point)
     {
-        var source = string.IsNullOrWhiteSpace(point.Source)
-            ? currentHistory?.Source ?? string.Empty
-            : point.Source;
-        return Text(
-            $"{point.Date:yyyy-MM-dd} · 1 USD = {point.Rate:0.####} · {source}",
-            $"{point.Date:yyyy-MM-dd} · 1 美元 = {point.Rate:0.####} · {source}");
+        return point.Rate.ToString("0.####", CultureInfo.InvariantCulture);
     }
 
     private string FormatHistoryTitle(string pair)

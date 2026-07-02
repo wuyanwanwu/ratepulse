@@ -4,7 +4,7 @@ namespace RatePulse.Windows.Models;
 
 public sealed class AppSettings
 {
-    private const int CurrentSettingsVersion = 2;
+    private const int CurrentSettingsVersion = 3;
     private static readonly Regex CurrencyCodeRegex = new("[A-Z]{3}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public int SettingsVersion { get; set; }
@@ -27,11 +27,11 @@ public sealed class AppSettings
 
     public string UiLanguage { get; set; } = "en";
 
-    public decimal ConverterAmount { get; set; } = 1000m;
+    public decimal ConverterAmount { get; set; } = 1m;
 
-    public string ConverterSourceCurrency { get; set; } = "CNY";
+    public string ConverterSourceCurrency { get; set; } = "USD";
 
-    public string ConverterTargetCurrency { get; set; } = "USD";
+    public string ConverterTargetCurrency { get; set; } = "CNY";
 
     public bool IsTopmost { get; set; } = true;
 
@@ -77,8 +77,9 @@ public sealed class AppSettings
 
         if (SettingsVersion < CurrentSettingsVersion)
         {
-            ConverterSourceCurrency = "CNY";
-            ConverterTargetCurrency = "USD";
+            ConverterAmount = 1m;
+            ConverterSourceCurrency = "USD";
+            ConverterTargetCurrency = "CNY";
             CurrencyPairs.RemoveAll(pair => pair.Equals("USD/CNY", StringComparison.OrdinalIgnoreCase));
             CurrencyPairs.Insert(0, "USD/CNY");
             SettingsVersion = CurrentSettingsVersion;
@@ -88,7 +89,7 @@ public sealed class AppSettings
         UiLanguage = UiLanguage.Equals("zh", StringComparison.OrdinalIgnoreCase) ? "zh" : "en";
         ConverterAmount = Math.Max(0, ConverterAmount);
         ConverterSourceCurrency = NormalizeCurrencyCode(ConverterSourceCurrency, "CNY");
-        ConverterTargetCurrency = NormalizeCurrencyCode(ConverterTargetCurrency, "USD");
+        ConverterTargetCurrency = NormalizeCurrencyCode(ConverterTargetCurrency, "CNY");
         WindowLeft = NormalizeWindowCoordinate(WindowLeft);
         WindowTop = NormalizeWindowCoordinate(WindowTop);
         WindowWidth = Math.Clamp(WindowWidth, 360, 1000);

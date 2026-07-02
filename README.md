@@ -12,7 +12,7 @@ Current scaffold:
 Windows v1 features:
 
 - Always-on-top floating widget window
-- USD bridge converter for one source amount and one target currency, defaulting to CNY -> USD
+- USD bridge converter for one source amount and one target currency, defaulting to 1 USD -> CNY
 - Editable currency dropdowns with common choices and manual three-letter fallback
 - USD-based watchlist cards with click-to-open 15-day history chart popups
 - English/Chinese UI selection with Chinese-English currency labels
