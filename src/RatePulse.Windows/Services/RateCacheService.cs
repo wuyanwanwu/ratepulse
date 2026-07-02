@@ -27,6 +27,7 @@ public sealed class RateCacheService
             cache ??= new RateCache();
             cache.Quotes = cache.Quotes.Select(quote => quote.WithCacheState(true)).ToList();
             cache.Conversion = cache.Conversion?.WithCacheState(true);
+            cache.Histories = cache.Histories.Select(history => history.WithCacheState(true)).ToList();
             return cache;
         }
         catch
@@ -44,6 +45,7 @@ public sealed class RateCacheService
     public async Task SaveAsync(
         IEnumerable<ExchangeRateQuote> quotes,
         CurrencyConversion? conversion,
+        IEnumerable<RateHistory>? histories = null,
         CancellationToken cancellationToken = default)
     {
         AppStoragePaths.EnsureAppDirectory();
@@ -52,7 +54,8 @@ public sealed class RateCacheService
         {
             SavedAt = DateTimeOffset.Now,
             Quotes = quotes.Select(quote => quote.WithCacheState(false)).ToList(),
-            Conversion = conversion?.WithCacheState(false)
+            Conversion = conversion?.WithCacheState(false),
+            Histories = histories?.Select(history => history.WithCacheState(false)).ToList() ?? []
         };
 
         await using var stream = File.Create(AppStoragePaths.CachePath);

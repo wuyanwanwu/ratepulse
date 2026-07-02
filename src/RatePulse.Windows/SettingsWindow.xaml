@@ -29,7 +29,7 @@
                            FontSize="13"
                            FontWeight="SemiBold" />
                 <TextBlock x:Name="CurrencyPairsHint"
-                           Text="One pair per line, like USD/CNY."
+                           Text="One USD pair or currency code per line, like USD/CNY or TRY."
                            Margin="0,4,0,8"
                            Foreground="#8D96A8"
                            FontSize="12" />

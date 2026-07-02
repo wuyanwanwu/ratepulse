@@ -5,15 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="RatePulse"
-        Width="340"
-        Height="560"
-        MinWidth="320"
-        MinHeight="500"
+        Width="380"
+        Height="680"
+        MinWidth="360"
+        MinHeight="620"
         WindowStyle="None"
         ResizeMode="CanResizeWithGrip"
         AllowsTransparency="True"
         Background="Transparent"
         ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         Closing="Window_Closing"
         StateChanged="Window_StateChanged"
@@ -38,6 +39,22 @@
             <Setter Property="Padding" Value="8" />
             <Setter Property="FontSize" Value="13" />
         </Style>
+        <Style x:Key="FieldCombo" TargetType="ComboBox">
+            <Setter Property="Background" Value="#232938" />
+            <Setter Property="Foreground" Value="#F4F7FB" />
+            <Setter Property="BorderBrush" Value="#3B455A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="RateItemButton" TargetType="Button">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
     </Window.Resources>
 
     <Border MouseLeftButtonDown="WindowChrome_MouseLeftButtonDown"
@@ -52,6 +69,7 @@
 
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -140,38 +158,62 @@
                                FontWeight="SemiBold" />
 
                     <Grid Grid.Row="1" Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="70" />
-                            <ColumnDefinition Width="70" />
-                            <ColumnDefinition Width="76" />
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                        <TextBox x:Name="ConverterAmountTextBox"
-                                 Style="{StaticResource FieldBox}"
-                                 ToolTip="Amount"
-                                 TextChanged="ConverterInput_Changed" />
-                        <TextBox Grid.Column="1"
-                                 x:Name="ConverterSourceTextBox"
-                                 Margin="6,0,0,0"
-                                 MaxLength="3"
-                                 CharacterCasing="Upper"
-                                 Style="{StaticResource FieldBox}"
-                                 ToolTip="Source currency"
-                                 TextChanged="ConverterInput_Changed" />
-                        <TextBox Grid.Column="2"
-                                 x:Name="ConverterTargetTextBox"
-                                 Margin="6,0,0,0"
-                                 MaxLength="3"
-                                 CharacterCasing="Upper"
-                                 Style="{StaticResource FieldBox}"
-                                 ToolTip="Target currency"
-                                 TextChanged="ConverterInput_Changed" />
-                        <Button Grid.Column="3"
-                                x:Name="ConvertButton"
-                                Margin="6,0,0,0"
-                                Content="Convert"
-                                Click="ConvertButton_Click" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="86" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="ConverterAmountTextBox"
+                                     Style="{StaticResource FieldBox}"
+                                     ToolTip="Amount"
+                                     TextChanged="ConverterInput_Changed" />
+                            <Button Grid.Column="1"
+                                    x:Name="ConvertButton"
+                                    Margin="8,0,0,0"
+                                    Content="Convert"
+                                    Click="ConvertButton_Click" />
+                        </Grid>
+
+                        <Grid Grid.Row="1" Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox x:Name="ConverterSourceComboBox"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="True"
+                                      StaysOpenOnEdit="True"
+                                      Style="{StaticResource FieldCombo}"
+                                      ToolTip="Source currency"
+                                      SelectionChanged="ConverterCurrencyComboBox_SelectionChanged"
+                                      KeyUp="ConverterCurrencyComboBox_KeyUp"
+                                      LostKeyboardFocus="ConverterCurrencyComboBox_LostKeyboardFocus" />
+                            <TextBlock Grid.Column="1"
+                                       x:Name="ViaUsdInlineText"
+                                       Text="→ USD →"
+                                       Margin="8,0"
+                                       Foreground="#8D96A8"
+                                       FontSize="12"
+                                       VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="2"
+                                      x:Name="ConverterTargetComboBox"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="True"
+                                      StaysOpenOnEdit="True"
+                                      Style="{StaticResource FieldCombo}"
+                                      ToolTip="Target currency"
+                                      SelectionChanged="ConverterCurrencyComboBox_SelectionChanged"
+                                      KeyUp="ConverterCurrencyComboBox_KeyUp"
+                                      LostKeyboardFocus="ConverterCurrencyComboBox_LostKeyboardFocus" />
+                        </Grid>
                     </Grid>
 
                     <StackPanel Grid.Row="2" Margin="0,12,0,0">
@@ -201,7 +243,51 @@
                 </Grid>
             </Border>
 
-            <TextBlock Grid.Row="3"
+            <Border Grid.Row="3"
+                    x:Name="HistoryPanel"
+                    Visibility="Collapsed"
+                    CornerRadius="12"
+                    Background="#202634"
+                    BorderBrush="#30384B"
+                    BorderThickness="1"
+                    Padding="12"
+                    Margin="0,0,0,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="150" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel LastChildFill="True">
+                        <TextBlock x:Name="HistoryTitleText"
+                                   DockPanel.Dock="Left"
+                                   Foreground="#F4F7FB"
+                                   FontSize="13"
+                                   FontWeight="SemiBold" />
+                        <TextBlock x:Name="HistoryStatusText"
+                                   DockPanel.Dock="Right"
+                                   Foreground="#8D96A8"
+                                   FontSize="10"
+                                   TextAlignment="Right" />
+                    </DockPanel>
+
+                    <Canvas Grid.Row="1"
+                            x:Name="HistoryChartCanvas"
+                            Margin="0,10,0,0"
+                            Background="#191E29"
+                            SizeChanged="HistoryChartCanvas_SizeChanged" />
+
+                    <TextBlock Grid.Row="2"
+                               x:Name="HistoryRangeText"
+                               Margin="0,8,0,0"
+                               Foreground="#8D96A8"
+                               FontSize="10"
+                               TextWrapping="Wrap" />
+                </Grid>
+            </Border>
+
+            <TextBlock Grid.Row="4"
                        x:Name="WatchlistTitleText"
                        Text="Watchlist"
                        Foreground="#D7DCE7"
@@ -209,58 +295,62 @@
                        FontWeight="SemiBold"
                        Margin="0,0,0,8" />
 
-            <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Rates}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Margin="0,0,0,8"
-                                    CornerRadius="10"
-                                    Background="#232938"
-                                    BorderBrush="#30384B"
-                                    BorderThickness="1"
-                                    Padding="12">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding DisplayPair}"
-                                                   Foreground="#F4F7FB"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding UpdatedAtText}"
-                                                   Margin="0,3,0,0"
-                                                   Foreground="#8D96A8"
-                                                   FontSize="11" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding RateText}"
-                                                   Foreground="#7BE3A2"
-                                                   FontSize="18"
-                                                   FontWeight="SemiBold"
-                                                   TextAlignment="Right" />
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                            <TextBlock Text="{Binding Source}"
-                                                       Margin="0,3,6,0"
-                                                       Foreground="#7C8495"
-                                                       FontSize="10"
-                                                       TextAlignment="Right" />
-                                            <TextBlock Text="{Binding DisplayDataState}"
+                            <Button Style="{StaticResource RateItemButton}"
+                                    CommandParameter="{Binding}"
+                                    Click="RateItem_Click">
+                                <Border Margin="0,0,0,8"
+                                        CornerRadius="10"
+                                        Background="#232938"
+                                        BorderBrush="#30384B"
+                                        BorderThickness="1"
+                                        Padding="12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DisplayPair}"
+                                                       Foreground="#F4F7FB"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding UpdatedAtText}"
                                                        Margin="0,3,0,0"
-                                                       Foreground="#B2BAC9"
-                                                       FontSize="10"
-                                                       TextAlignment="Right" />
+                                                       Foreground="#8D96A8"
+                                                       FontSize="11" />
                                         </StackPanel>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding RateText}"
+                                                       Foreground="#7BE3A2"
+                                                       FontSize="18"
+                                                       FontWeight="SemiBold"
+                                                       TextAlignment="Right" />
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <TextBlock Text="{Binding Source}"
+                                                           Margin="0,3,6,0"
+                                                           Foreground="#7C8495"
+                                                           FontSize="10"
+                                                           TextAlignment="Right" />
+                                                <TextBlock Text="{Binding DisplayDataState}"
+                                                           Margin="0,3,0,0"
+                                                           Foreground="#B2BAC9"
+                                                           FontSize="10"
+                                                           TextAlignment="Right" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
 
-            <Grid Grid.Row="5" Margin="0,6,0,0">
+            <Grid Grid.Row="6" Margin="0,6,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />

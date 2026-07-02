@@ -8,10 +8,12 @@ public sealed class TrayIconService : IDisposable
 {
     private readonly Forms.NotifyIcon notifyIcon;
     private readonly Window window;
+    private readonly Action requestExit;
 
-    public TrayIconService(Window window)
+    public TrayIconService(Window window, Action requestExit)
     {
         this.window = window;
+        this.requestExit = requestExit;
 
         notifyIcon = new Forms.NotifyIcon
         {
@@ -49,11 +51,7 @@ public sealed class TrayIconService : IDisposable
         var menu = new Forms.ContextMenuStrip();
 
         menu.Items.Add("Show", null, (_, _) => RestoreWindow());
-        menu.Items.Add("Exit", null, (_, _) =>
-        {
-            notifyIcon.Visible = false;
-            System.Windows.Application.Current.Shutdown();
-        });
+        menu.Items.Add("Exit", null, (_, _) => requestExit());
 
         return menu;
     }

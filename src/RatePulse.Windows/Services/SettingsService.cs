@@ -42,4 +42,13 @@ public sealed class SettingsService
         await using var stream = File.Create(AppStoragePaths.SettingsPath);
         await JsonSerializer.SerializeAsync(stream, settings, JsonOptions, cancellationToken);
     }
+
+    public void Save(AppSettings settings)
+    {
+        AppStoragePaths.EnsureAppDirectory();
+        settings.Normalize();
+
+        using var stream = File.Create(AppStoragePaths.SettingsPath);
+        JsonSerializer.Serialize(stream, settings, JsonOptions);
+    }
 }

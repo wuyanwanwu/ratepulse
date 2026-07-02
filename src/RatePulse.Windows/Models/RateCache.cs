@@ -7,4 +7,6 @@ public sealed class RateCache
     public List<ExchangeRateQuote> Quotes { get; set; } = [];
 
     public CurrencyConversion? Conversion { get; set; }
+
+    public List<RateHistory> Histories { get; set; } = [];
 }

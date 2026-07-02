@@ -9,7 +9,7 @@ public sealed class ExchangeRateService
 {
     private static readonly HttpClient HttpClient = new()
     {
-        Timeout = TimeSpan.FromSeconds(10)
+        Timeout = TimeSpan.FromSeconds(6)
     };
 
     public async Task<IReadOnlyList<ExchangeRateQuote>> GetQuotesAsync(IEnumerable<string> pairs, CancellationToken cancellationToken = default)
@@ -17,7 +17,7 @@ public sealed class ExchangeRateService
         var quotes = new List<ExchangeRateQuote>();
         var ratesByBaseCurrency = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var pair in pairs)
+        foreach (var pair in pairs.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             quotes.Add(await GetQuoteAsync(pair, ratesByBaseCurrency, cancellationToken));
         }
@@ -67,6 +67,80 @@ public sealed class ExchangeRateService
             UsdToTargetRate = usdToTargetRate,
             UpdatedAt = updatedAt,
             Source = "open.er-api",
+            IsCached = false
+        };
+    }
+
+    public async Task<RateHistory> GetUsdHistoryAsync(
+        string quoteCurrency,
+        int days = 15,
+        CancellationToken cancellationToken = default)
+    {
+        quoteCurrency = quoteCurrency.Trim().ToUpperInvariant();
+        if (quoteCurrency.Length != 3 || quoteCurrency.Equals("USD", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("History needs a non-USD quote currency, for example CNY or JPY.");
+        }
+
+        days = Math.Clamp(days, 2, 60);
+        var endDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var startDate = endDate.AddDays(-(days - 1));
+        var requestUri = string.Create(
+            CultureInfo.InvariantCulture,
+            $"https://api.frankfurter.dev/v2/rates?from={startDate:yyyy-MM-dd}&to={endDate:yyyy-MM-dd}&base=USD&quotes={Uri.EscapeDataString(quoteCurrency)}");
+
+        using var response = await HttpClient.GetAsync(requestUri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+        if (!document.RootElement.TryGetProperty("value", out var values) || values.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException("Historical rate response did not include a value array.");
+        }
+
+        var points = new List<RateHistoryPoint>();
+        foreach (var item in values.EnumerateArray())
+        {
+            if (!item.TryGetProperty("quote", out var quoteElement) ||
+                !quoteCurrency.Equals(quoteElement.GetString(), StringComparison.OrdinalIgnoreCase) ||
+                !item.TryGetProperty("date", out var dateElement) ||
+                !item.TryGetProperty("rate", out var rateElement))
+            {
+                continue;
+            }
+
+            var dateText = dateElement.GetString();
+            if (string.IsNullOrWhiteSpace(dateText) ||
+                !DateOnly.TryParse(dateText, CultureInfo.InvariantCulture, out var date))
+            {
+                continue;
+            }
+
+            points.Add(new RateHistoryPoint
+            {
+                Date = date,
+                Rate = rateElement.GetDecimal()
+            });
+        }
+
+        points = points
+            .OrderBy(point => point.Date)
+            .TakeLast(days)
+            .ToList();
+
+        if (points.Count == 0)
+        {
+            throw new InvalidOperationException($"Missing USD history for {quoteCurrency}.");
+        }
+
+        return new RateHistory
+        {
+            Pair = $"USD/{quoteCurrency}",
+            Points = points,
+            UpdatedAt = DateTimeOffset.Now,
+            Source = "frankfurter",
             IsCached = false
         };
     }

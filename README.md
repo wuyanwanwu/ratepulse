@@ -7,16 +7,18 @@ Current scaffold:
 - Windows 11 floating desktop window: `src/RatePulse.Windows`
 - Framework: .NET 8 WPF
 - SDK location on this machine: `E:\DevTools\dotnet`
-- Default currency pairs: USD/CNY, EUR/CNY, JPY/CNY, HKD/CNY, GBP/CNY
+- Default watchlist pairs: USD/CNY, USD/EUR, USD/JPY, USD/HKD, USD/GBP, USD/AUD, USD/CAD, USD/CHF, USD/SGD, USD/TRY
 
 Windows v1 features:
 
 - Always-on-top floating widget window
 - USD bridge converter for one source amount and one target currency
+- Editable currency dropdowns with common choices and manual three-letter fallback
+- USD-based watchlist cards with click-to-load 15-day history charts
 - English/Chinese UI selection with Chinese-English currency labels
-- Editable currency pairs and refresh interval
+- Editable USD watchlist and refresh interval
 - Local settings saved under `%LOCALAPPDATA%\RatePulse`
-- Local rate cache for startup/offline display
+- Local rate and chart cache for startup/offline display
 - Minimize-to-tray and tray restore/exit menu
 
 ## Run the Windows widget
@@ -53,4 +55,4 @@ E:\DevTools\dotnet\dotnet.exe build D:\program\ratepulse\RatePulse.sln
 
 ## Notes
 
-The first data provider is `open.er-api.com` so the app can work without an API key during early development. For production-grade live financial rates, replace the provider behind `ExchangeRateService` with a paid provider or a private proxy API.
+Latest rates and the USD bridge converter use `open.er-api.com` so the app can work without an API key during early development. The 15-day watchlist chart uses `api.frankfurter.dev` because it provides date-range history. For production-grade live financial rates, replace the provider behind `ExchangeRateService` with a paid provider or a private proxy API.

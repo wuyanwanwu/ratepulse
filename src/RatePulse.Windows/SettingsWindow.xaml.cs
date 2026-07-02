@@ -26,9 +26,11 @@ public partial class SettingsWindow : Window
             .Select(pair => pair.ToUpperInvariant())
             .ToList();
 
-        if (pairs.Count == 0 || pairs.Any(pair => pair.Split('/').Length != 2))
+        if (pairs.Count == 0 || pairs.Any(pair => !IsValidWatchItem(pair)))
         {
-            ValidationText.Text = Text("Please enter at least one valid pair, for example USD/CNY.", "请输入至少一个有效货币对，例如 USD/CNY。");
+            ValidationText.Text = Text(
+                "Please enter at least one valid USD pair or currency code, for example USD/CNY or TRY.",
+                "请输入至少一个有效 USD 货币对或货币代码，例如 USD/CNY 或 TRY。");
             return;
         }
 
@@ -67,7 +69,9 @@ public partial class SettingsWindow : Window
         SettingsTitleText.Text = isChinese ? "设置" : "Settings";
         LanguageLabel.Text = isChinese ? "界面语言" : "Language";
         CurrencyPairsLabel.Text = isChinese ? "关注汇率" : "Currency pairs";
-        CurrencyPairsHint.Text = isChinese ? "每行一个货币对，例如 USD/CNY。" : "One pair per line, like USD/CNY.";
+        CurrencyPairsHint.Text = isChinese
+            ? "每行一个 USD 货币对或货币代码，例如 USD/CNY 或 TRY。"
+            : "One USD pair or currency code per line, like USD/CNY or TRY.";
         RefreshIntervalLabel.Text = isChinese ? "刷新间隔（分钟）" : "Refresh interval (minutes)";
         TopmostCheckBox.Content = isChinese ? "窗口置顶" : "Always on top";
         CancelButton.Content = isChinese ? "取消" : "Cancel";
@@ -77,5 +81,18 @@ public partial class SettingsWindow : Window
     private string Text(string english, string chinese)
     {
         return LanguageComboBox.SelectedValue?.ToString() == "zh" ? chinese : english;
+    }
+
+    private static bool IsValidWatchItem(string value)
+    {
+        var trimmed = value.Trim();
+        if (trimmed.Length == 3 && trimmed.All(char.IsLetter))
+        {
+            return true;
+        }
+
+        var parts = trimmed.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 2 &&
+            parts.All(part => part.Length == 3 && part.All(char.IsLetter));
     }
 }
