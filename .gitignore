@@ -186,6 +186,13 @@ DocProject/Help/html
 publish/
 release/
 
+# Android
+**/.gradle/
+**/local.properties
+*.apk
+*.aab
+captures/
+
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml

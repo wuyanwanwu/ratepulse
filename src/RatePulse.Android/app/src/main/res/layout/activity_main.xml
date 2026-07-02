@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1D2029"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="RatePulse"
+        android:textColor="#F4F7FB"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/main_rate_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="1 USD = -- CNY"
+        android:textColor="#7BE3A2"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/main_meta_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="No cached rate yet"
+        android:textColor="#9EA7B8"
+        android:textSize="14sp" />
+
+    <Button
+        android:id="@+id/main_refresh_button"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="24dp"
+        android:text="Refresh now" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Add the RatePulse widget from your Android launcher. Auto refresh is scheduled for 08:15 local time; tap R on the widget to refresh manually."
+        android:textColor="#D7DCE7"
+        android:textSize="14sp" />
+</LinearLayout>

@@ -5,6 +5,7 @@ RatePulse is a lightweight exchange-rate widget project.
 Current scaffold:
 
 - Windows 11 floating desktop window: `src/RatePulse.Windows`
+- Android home-screen widget: `src/RatePulse.Android`
 - Framework: .NET 8 WPF
 - SDK location on this machine: `E:\DevTools\dotnet`
 - Default watchlist pairs: USD/CNY, USD/EUR, USD/JPY, USD/HKD, USD/GBP, USD/AUD, USD/CAD, USD/CHF, USD/SGD, USD/TRY
@@ -52,6 +53,16 @@ E:\DevTools\dotnet\dotnet.exe run --project D:\program\ratepulse\src\RatePulse.W
 ```powershell
 E:\DevTools\dotnet\dotnet.exe build D:\program\ratepulse\RatePulse.sln
 ```
+
+## Android widget
+
+Open the Android module in Android Studio:
+
+```text
+D:\program\ratepulse\src\RatePulse.Android
+```
+
+Android v1 is a native Kotlin app widget. It defaults to `1 USD = x CNY`, supports manual widget refresh, caches the last successful rate, and schedules a daily refresh at 08:15 local device time.
 
 ## Notes
 
