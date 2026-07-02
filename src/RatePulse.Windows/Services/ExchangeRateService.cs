@@ -88,13 +88,15 @@ public sealed class ExchangeRateService
 
         try
         {
-            return await GetFrankfurterV2UsdHistoryAsync(quoteCurrency, startDate, endDate, days, cancellationToken);
+            var history = await GetFrankfurterV2UsdHistoryAsync(quoteCurrency, startDate, endDate, days, cancellationToken);
+            return await AddLatestUsdPointAsync(history, quoteCurrency, days, cancellationToken);
         }
         catch (Exception v2Exception) when (v2Exception is not OperationCanceledException)
         {
             try
             {
-                return await GetFrankfurterClassicUsdHistoryAsync(quoteCurrency, startDate, endDate, days, cancellationToken);
+                var fallbackHistory = await GetFrankfurterClassicUsdHistoryAsync(quoteCurrency, startDate, endDate, days, cancellationToken);
+                return await AddLatestUsdPointAsync(fallbackHistory, quoteCurrency, days, cancellationToken);
             }
             catch (Exception classicException) when (classicException is not OperationCanceledException)
             {
@@ -122,9 +124,16 @@ public sealed class ExchangeRateService
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
 
-        if (!document.RootElement.TryGetProperty("value", out var values) || values.ValueKind != JsonValueKind.Array)
+        var values = document.RootElement;
+        if (values.ValueKind == JsonValueKind.Object &&
+            values.TryGetProperty("value", out var valueArray))
         {
-            throw new InvalidOperationException("Historical rate response did not include a value array.");
+            values = valueArray;
+        }
+
+        if (values.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException("Historical rate response did not include an array.");
         }
 
         var points = new List<RateHistoryPoint>();
@@ -148,7 +157,8 @@ public sealed class ExchangeRateService
             points.Add(new RateHistoryPoint
             {
                 Date = date,
-                Rate = rateElement.GetDecimal()
+                Rate = rateElement.GetDecimal(),
+                Source = "frankfurter.dev"
             });
         }
 
@@ -207,7 +217,8 @@ public sealed class ExchangeRateService
             points.Add(new RateHistoryPoint
             {
                 Date = date,
-                Rate = rateElement.GetDecimal()
+                Rate = rateElement.GetDecimal(),
+                Source = "frankfurter.app"
             });
         }
 
@@ -229,6 +240,46 @@ public sealed class ExchangeRateService
             Source = "frankfurter.app",
             IsCached = false
         };
+    }
+
+    private static async Task<RateHistory> AddLatestUsdPointAsync(
+        RateHistory history,
+        string quoteCurrency,
+        int days,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var latestQuote = await GetQuoteAsync(
+                $"USD/{quoteCurrency}",
+                new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase),
+                cancellationToken);
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var points = history.Points
+                .Where(point => point.Date != today)
+                .Append(new RateHistoryPoint
+                {
+                    Date = today,
+                    Rate = latestQuote.Rate,
+                    Source = latestQuote.Source
+                })
+                .OrderBy(point => point.Date)
+                .TakeLast(days)
+                .ToList();
+
+            return new RateHistory
+            {
+                Pair = history.Pair,
+                Points = points,
+                UpdatedAt = latestQuote.UpdatedAt,
+                Source = $"{history.Source}+{latestQuote.Source}",
+                IsCached = false
+            };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return history;
+        }
     }
 
     private static async Task<ExchangeRateQuote> GetQuoteAsync(

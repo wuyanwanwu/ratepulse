@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using WpfButton = System.Windows.Controls.Button;
+using WpfColor = System.Windows.Media.Color;
 using WpfComboBox = System.Windows.Controls.ComboBox;
 using WpfTextBox = System.Windows.Controls.TextBox;
 
@@ -107,6 +108,15 @@ public partial class MainWindow : Window
         if (TryCaptureConverterSettings(showErrors: false))
         {
             await SaveCurrentSettingsAsync();
+        }
+    }
+
+    private void ConverterCurrencyComboBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is WpfComboBox comboBox)
+        {
+            ApplyEditableComboBoxStyle(comboBox);
+            NormalizeCurrencyComboBoxDisplay(comboBox, preferSelection: false);
         }
     }
 
@@ -580,11 +590,27 @@ public partial class MainWindow : Window
         isApplyingSettings = true;
         try
         {
+            ApplyEditableComboBoxStyle(comboBox);
             SetCurrencyComboBoxValue(comboBox, currencyCode);
         }
         finally
         {
             isApplyingSettings = false;
+        }
+    }
+
+    private static void ApplyEditableComboBoxStyle(WpfComboBox comboBox)
+    {
+        comboBox.ApplyTemplate();
+        comboBox.Foreground = new SolidColorBrush(WpfColor.FromRgb(17, 24, 39));
+        comboBox.Background = new SolidColorBrush(WpfColor.FromRgb(248, 250, 252));
+
+        if (comboBox.Template.FindName("PART_EditableTextBox", comboBox) is WpfTextBox editableTextBox)
+        {
+            editableTextBox.Foreground = new SolidColorBrush(WpfColor.FromRgb(17, 24, 39));
+            editableTextBox.Background = new SolidColorBrush(WpfColor.FromRgb(248, 250, 252));
+            editableTextBox.CaretBrush = new SolidColorBrush(WpfColor.FromRgb(17, 24, 39));
+            editableTextBox.SelectionBrush = new SolidColorBrush(WpfColor.FromRgb(191, 219, 254));
         }
     }
 

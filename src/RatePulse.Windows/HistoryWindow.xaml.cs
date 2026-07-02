@@ -3,9 +3,12 @@ using RatePulse.Windows.Services;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using WpfBrushes = System.Windows.Media.Brushes;
 using WpfColor = System.Windows.Media.Color;
+using WpfCursors = System.Windows.Input.Cursors;
 using WpfPoint = System.Windows.Point;
 
 namespace RatePulse.Windows;
@@ -171,17 +174,33 @@ public partial class HistoryWindow : Window
 
         HistoryChartCanvas.Children.Add(polyline);
 
-        foreach (var point in polyline.Points)
+        for (var index = 0; index < polyline.Points.Count; index++)
         {
+            var point = polyline.Points[index];
+            var historyPoint = points[index];
             var dot = new Ellipse
             {
-                Width = 5,
-                Height = 5,
+                Width = 6,
+                Height = 6,
                 Fill = lineBrush
             };
-            Canvas.SetLeft(dot, point.X - 2.5);
-            Canvas.SetTop(dot, point.Y - 2.5);
+            Canvas.SetLeft(dot, point.X - 3);
+            Canvas.SetTop(dot, point.Y - 3);
             HistoryChartCanvas.Children.Add(dot);
+
+            var hitArea = new Ellipse
+            {
+                Width = 18,
+                Height = 18,
+                Fill = WpfBrushes.Transparent,
+                Cursor = WpfCursors.Hand,
+                ToolTip = FormatPointText(historyPoint)
+            };
+            ToolTipService.SetInitialShowDelay(hitArea, 0);
+            hitArea.MouseLeftButtonDown += (_, _) => ShowSelectedPoint(historyPoint);
+            Canvas.SetLeft(hitArea, point.X - 9);
+            Canvas.SetTop(hitArea, point.Y - 9);
+            HistoryChartCanvas.Children.Add(hitArea);
         }
 
         AddChartDateLabels(points, left, plotWidth, height - bottom + 8);
@@ -233,6 +252,21 @@ public partial class HistoryWindow : Window
         Canvas.SetLeft(label, left);
         Canvas.SetTop(label, top);
         HistoryChartCanvas.Children.Add(label);
+    }
+
+    private void ShowSelectedPoint(RateHistoryPoint point)
+    {
+        HistoryRangeText.Text = FormatPointText(point);
+    }
+
+    private string FormatPointText(RateHistoryPoint point)
+    {
+        var source = string.IsNullOrWhiteSpace(point.Source)
+            ? currentHistory?.Source ?? string.Empty
+            : point.Source;
+        return Text(
+            $"{point.Date:yyyy-MM-dd} · 1 USD = {point.Rate:0.####} · {source}",
+            $"{point.Date:yyyy-MM-dd} · 1 美元 = {point.Rate:0.####} · {source}");
     }
 
     private string FormatHistoryTitle(string pair)

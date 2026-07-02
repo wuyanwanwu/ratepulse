@@ -7,6 +7,8 @@ public sealed class RateHistoryPoint
     public required DateOnly Date { get; init; }
 
     public required decimal Rate { get; init; }
+
+    public string? Source { get; init; }
 }
 
 public sealed class RateHistory
