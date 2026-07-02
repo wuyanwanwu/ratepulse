@@ -117,12 +117,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (TryCaptureConverterSettings(showErrors: false))
+        if (TryCaptureConverterSettings(showErrors: false, preferSelection: true))
         {
-            NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox);
+            NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox, preferSelection: true);
             await SaveCurrentSettingsAsync();
             await RefreshRatesAsync();
         }
+    }
+
+    private void ConverterCurrencyComboBox_DropDownClosed(object sender, EventArgs e)
+    {
+        if (!isLoaded || isApplyingSettings)
+        {
+            return;
+        }
+
+        NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox, preferSelection: true);
     }
 
     private async void ConverterCurrencyComboBox_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
@@ -136,7 +146,7 @@ public partial class MainWindow : Window
         {
             if (e.Key == Key.Enter)
             {
-                NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox);
+                NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox, preferSelection: false);
             }
 
             await SaveCurrentSettingsAsync();
@@ -157,7 +167,7 @@ public partial class MainWindow : Window
 
         if (TryCaptureConverterSettings(showErrors: false))
         {
-            NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox);
+            NormalizeCurrencyComboBoxDisplay(sender as WpfComboBox, preferSelection: false);
             await SaveCurrentSettingsAsync();
         }
     }
@@ -517,7 +527,7 @@ public partial class MainWindow : Window
             : Text("Normal window", "普通窗口");
     }
 
-    private bool TryCaptureConverterSettings(bool showErrors)
+    private bool TryCaptureConverterSettings(bool showErrors, bool preferSelection = false)
     {
         if (!decimal.TryParse(ConverterAmountTextBox.Text.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var amount) || amount < 0)
         {
@@ -529,8 +539,8 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var sourceCurrency = ExtractCurrencyCode(ConverterSourceComboBox);
-        var targetCurrency = ExtractCurrencyCode(ConverterTargetComboBox);
+        var sourceCurrency = ExtractCurrencyCode(ConverterSourceComboBox, preferSelection);
+        var targetCurrency = ExtractCurrencyCode(ConverterTargetComboBox, preferSelection);
 
         if (sourceCurrency.Length != 3 || targetCurrency.Length != 3)
         {
@@ -548,25 +558,33 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private void NormalizeCurrencyComboBoxDisplay(WpfComboBox? comboBox)
+    private void NormalizeCurrencyComboBoxDisplay(WpfComboBox? comboBox, bool preferSelection)
     {
         if (comboBox is null)
         {
             return;
         }
 
-        var currencyCode = ExtractCurrencyCode(comboBox);
+        var currencyCode = ExtractCurrencyCode(comboBox, preferSelection);
         if (currencyCode.Length == 3)
         {
-            isApplyingSettings = true;
-            try
-            {
-                SetCurrencyComboBoxValue(comboBox, currencyCode);
-            }
-            finally
-            {
-                isApplyingSettings = false;
-            }
+            ApplyCurrencyComboBoxDisplay(comboBox, currencyCode);
+            _ = comboBox.Dispatcher.BeginInvoke(
+                new Action(() => ApplyCurrencyComboBoxDisplay(comboBox, currencyCode)),
+                DispatcherPriority.ContextIdle);
+        }
+    }
+
+    private void ApplyCurrencyComboBoxDisplay(WpfComboBox comboBox, string currencyCode)
+    {
+        isApplyingSettings = true;
+        try
+        {
+            SetCurrencyComboBoxValue(comboBox, currencyCode);
+        }
+        finally
+        {
+            isApplyingSettings = false;
         }
     }
 
@@ -583,25 +601,30 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string ExtractCurrencyCode(WpfComboBox comboBox)
+    private static string ExtractCurrencyCode(WpfComboBox comboBox, bool preferSelection = false)
     {
+        var selectionCode = string.Empty;
+        if (comboBox.SelectedValue is string selectedValue && selectedValue.Length == 3)
+        {
+            selectionCode = selectedValue.ToUpperInvariant();
+        }
+        else if (comboBox.SelectedItem is CurrencyOption selectedOption)
+        {
+            selectionCode = selectedOption.Code.ToUpperInvariant();
+        }
+
+        if (preferSelection && selectionCode.Length == 3)
+        {
+            return selectionCode;
+        }
+
         var textCode = CurrencyDisplayService.ExtractCurrencyCode(comboBox.Text);
         if (textCode.Length == 3)
         {
             return textCode;
         }
 
-        if (comboBox.SelectedValue is string selectedValue && selectedValue.Length == 3)
-        {
-            return selectedValue.ToUpperInvariant();
-        }
-
-        if (comboBox.SelectedItem is CurrencyOption selectedOption)
-        {
-            return selectedOption.Code.ToUpperInvariant();
-        }
-
-        return string.Empty;
+        return selectionCode;
     }
 
     private void CaptureWindowPlacement()

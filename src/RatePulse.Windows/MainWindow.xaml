@@ -31,6 +31,12 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Foreground" Value="#F4F7FB" />
+            <Setter Property="Background" Value="#232938" />
+            <Setter Property="CaretBrush" Value="#F4F7FB" />
+            <Setter Property="SelectionBrush" Value="#405A78" />
+        </Style>
         <Style x:Key="FieldBox" TargetType="TextBox">
             <Setter Property="Background" Value="#232938" />
             <Setter Property="Foreground" Value="#F4F7FB" />
@@ -46,6 +52,7 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextSearch.TextPath" Value="DisplayName" />
         </Style>
         <Style x:Key="RateItemButton" TargetType="Button">
             <Setter Property="Padding" Value="0" />
@@ -195,6 +202,7 @@
                                       Style="{StaticResource FieldCombo}"
                                       ToolTip="Source currency"
                                       SelectionChanged="ConverterCurrencyComboBox_SelectionChanged"
+                                      DropDownClosed="ConverterCurrencyComboBox_DropDownClosed"
                                       KeyUp="ConverterCurrencyComboBox_KeyUp"
                                       LostKeyboardFocus="ConverterCurrencyComboBox_LostKeyboardFocus" />
                             <TextBlock Grid.Column="1"
@@ -214,6 +222,7 @@
                                       Style="{StaticResource FieldCombo}"
                                       ToolTip="Target currency"
                                       SelectionChanged="ConverterCurrencyComboBox_SelectionChanged"
+                                      DropDownClosed="ConverterCurrencyComboBox_DropDownClosed"
                                       KeyUp="ConverterCurrencyComboBox_KeyUp"
                                       LostKeyboardFocus="ConverterCurrencyComboBox_LostKeyboardFocus" />
                         </Grid>

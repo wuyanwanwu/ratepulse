@@ -184,19 +184,50 @@ public partial class HistoryWindow : Window
             HistoryChartCanvas.Children.Add(dot);
         }
 
-        AddChartDateLabel(points[0].Date, left, height - bottom + 8, TextAlignment.Left);
-        AddChartDateLabel(points[^1].Date, width - right - 64, height - bottom + 8, TextAlignment.Right);
+        AddChartDateLabels(points, left, plotWidth, height - bottom + 8);
     }
 
-    private void AddChartDateLabel(DateOnly date, double left, double top, TextAlignment alignment)
+    private void AddChartDateLabels(IReadOnlyList<RateHistoryPoint> points, double plotLeft, double plotWidth, double top)
     {
+        if (points.Count == 0)
+        {
+            return;
+        }
+
+        var maxLabels = Math.Clamp((int)Math.Floor(plotWidth / 76) + 1, 2, points.Count);
+        var step = Math.Max(1, (int)Math.Ceiling((double)(points.Count - 1) / (maxLabels - 1)));
+        var indexes = Enumerable
+            .Range(0, points.Count)
+            .Where(index => index % step == 0)
+            .Append(points.Count - 1)
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var index in indexes)
+        {
+            var x = points.Count == 1
+                ? plotLeft + plotWidth
+                : plotLeft + plotWidth * index / (points.Count - 1);
+            AddChartDateLabel(points[index].Date, x, top);
+        }
+    }
+
+    private void AddChartDateLabel(DateOnly date, double centerX, double top)
+    {
+        const double labelWidth = 56;
+        var left = Math.Clamp(
+            centerX - labelWidth / 2,
+            0,
+            Math.Max(0, HistoryChartCanvas.ActualWidth - labelWidth));
+
         var label = new TextBlock
         {
             Text = date.ToString("MM-dd", CultureInfo.InvariantCulture),
             Foreground = new SolidColorBrush(WpfColor.FromRgb(141, 150, 168)),
             FontSize = 10,
-            Width = 64,
-            TextAlignment = alignment
+            Width = labelWidth,
+            TextAlignment = TextAlignment.Center
         };
 
         Canvas.SetLeft(label, left);
