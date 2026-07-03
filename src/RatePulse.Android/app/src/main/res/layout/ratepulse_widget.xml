@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="RatePulse"
+            android:text="RatePulse 汇率"
             android:textColor="#F4F7FB"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -29,9 +29,9 @@
             android:layout_height="30dp"
             android:background="@drawable/button_background"
             android:gravity="center"
-            android:text="R"
+            android:text="刷新"
             android:textColor="#F4F7FB"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -50,7 +50,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Tap R to refresh"
+        android:text="点刷新获取汇率"
         android:textColor="#9EA7B8"
         android:textSize="11sp" />
 </LinearLayout>

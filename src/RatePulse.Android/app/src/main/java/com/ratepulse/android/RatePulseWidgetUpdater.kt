@@ -31,8 +31,8 @@ object RatePulseWidgetUpdater {
         val rateText = snapshot?.let { "1 USD = ${RatePulseFormat.rate(it.usdToCny)} CNY" }
             ?: "1 USD = -- CNY"
         val metaText = when {
-            snapshot == null -> "Tap R to refresh"
-            !snapshot.errorMessage.isNullOrBlank() -> "Cached / offline"
+            snapshot == null -> "点刷新获取汇率"
+            !snapshot.errorMessage.isNullOrBlank() -> "缓存数据 / 离线"
             else -> "${RatePulseFormat.updatedAt(snapshot.updatedAtMillis)} · ${snapshot.source}"
         }
 
