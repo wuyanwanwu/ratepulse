@@ -188,6 +188,7 @@ release/
 
 # Android
 **/.gradle/
+**/build/
 **/local.properties
 *.apk
 *.aab
