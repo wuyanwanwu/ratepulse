@@ -8,36 +8,52 @@ import android.content.Intent
 import android.widget.RemoteViews
 
 object RatePulseWidgetUpdater {
-    fun updateAll(context: Context, snapshot: RatePulseSnapshot? = RatePulseRepository(context).cachedSnapshot()) {
+    fun updateAll(
+        context: Context,
+        snapshot: RatePulseSnapshot? = null,
+        history: RateHistory? = null
+    ) {
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val widgetComponent = ComponentName(context, RatePulseWidgetProvider::class.java)
         val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
-        update(context, appWidgetManager, widgetIds, snapshot)
+        update(context, appWidgetManager, widgetIds, snapshot, history)
     }
 
     fun update(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
-        snapshot: RatePulseSnapshot?
+        snapshot: RatePulseSnapshot? = null,
+        history: RateHistory? = null
     ) {
+        val repository = RatePulseRepository(context)
+        val target = repository.selectedTargetCurrency()
+        val effectiveSnapshot = snapshot ?: repository.cachedSnapshot(target)
+        val effectiveHistory = history ?: repository.cachedHistory(target)
         appWidgetIds.forEach { widgetId ->
-            appWidgetManager.updateAppWidget(widgetId, buildRemoteViews(context, snapshot))
+            appWidgetManager.updateAppWidget(widgetId, buildRemoteViews(context, effectiveSnapshot, effectiveHistory))
         }
     }
 
-    private fun buildRemoteViews(context: Context, snapshot: RatePulseSnapshot?): RemoteViews {
+    private fun buildRemoteViews(
+        context: Context,
+        snapshot: RatePulseSnapshot?,
+        history: RateHistory?
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.ratepulse_widget)
-        val rateText = snapshot?.let { "1 USD = ${RatePulseFormat.rate(it.usdToCny)} CNY" }
-            ?: "1 USD = -- CNY"
+        val target = snapshot?.targetCurrency ?: RatePulseRepository(context).selectedTargetCurrency()
+        val rateText = snapshot?.let { "1 USD = ${RatePulseFormat.rate(it.usdToTarget)} ${it.targetCurrency}" }
+            ?: "1 USD = -- $target"
         val metaText = when {
             snapshot == null -> "点刷新获取汇率"
             !snapshot.errorMessage.isNullOrBlank() -> "缓存数据 / 离线"
             else -> "${RatePulseFormat.updatedAt(snapshot.updatedAtMillis)} · ${snapshot.source}"
         }
 
+        views.setTextViewText(R.id.widget_title, "USD / ${RatePulseCurrencies.labelFor(target)}")
         views.setTextViewText(R.id.widget_rate, rateText)
         views.setTextViewText(R.id.widget_meta, metaText)
+        views.setImageViewBitmap(R.id.widget_chart, RatePulseChartRenderer.renderSparkline(history))
         views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent(context))
         views.setOnClickPendingIntent(R.id.widget_root, mainActivityPendingIntent(context))
         return views

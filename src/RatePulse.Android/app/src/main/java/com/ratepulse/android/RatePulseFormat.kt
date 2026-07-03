@@ -13,7 +13,7 @@ object RatePulseFormat {
 
     fun updatedAt(millis: Long): String {
         if (millis <= 0L) {
-            return "No update time"
+            return "暂无更新时间"
         }
 
         return dateFormat.format(Date(millis))

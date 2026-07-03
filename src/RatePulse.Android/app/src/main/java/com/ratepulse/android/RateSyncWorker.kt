@@ -13,14 +13,20 @@ class RateSyncWorker(
 ) : Worker(context, workerParameters) {
     override fun doWork(): Result {
         return try {
-            val snapshot = RatePulseRepository(applicationContext).refreshSnapshot()
-            RatePulseWidgetUpdater.updateAll(applicationContext, snapshot)
+            val repository = RatePulseRepository(applicationContext)
+            val snapshot = repository.refreshSnapshot()
+            val history = repository.refreshHistory(snapshot.targetCurrency, snapshot)
+            RatePulseWidgetUpdater.updateAll(applicationContext, snapshot, history)
             Result.success()
         } catch (exception: Exception) {
-            val cached = RatePulseRepository(applicationContext).cachedSnapshot()
+            val repository = RatePulseRepository(applicationContext)
+            val target = repository.selectedTargetCurrency()
+            val cached = repository.cachedSnapshot(target)
+            val history = repository.cachedHistory(target)
             RatePulseWidgetUpdater.updateAll(
                 applicationContext,
-                cached?.copy(errorMessage = exception.message)
+                cached?.copy(errorMessage = exception.message),
+                history
             )
             Result.retry()
         }

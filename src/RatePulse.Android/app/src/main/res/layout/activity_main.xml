@@ -1,58 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#1D2029"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:fillViewport="true">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="RatePulse"
-        android:textColor="#F4F7FB"
-        android:textSize="28sp"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <TextView
-        android:id="@+id/main_rate_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="1 USD = -- CNY"
-        android:textColor="#7BE3A2"
-        android:textSize="30sp"
-        android:textStyle="bold" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RatePulse"
+            android:textColor="#F4F7FB"
+            android:textSize="28sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/main_meta_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="还没有缓存汇率"
-        android:textColor="#9EA7B8"
-        android:textSize="14sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="目标货币"
+            android:textColor="#9EA7B8"
+            android:textSize="14sp" />
 
-    <TextView
-        android:id="@+id/main_status_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="桌面小组件未添加"
-        android:textColor="#D7DCE7"
-        android:textSize="15sp" />
+        <Spinner
+            android:id="@+id/main_currency_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/button_background"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp" />
 
-    <Button
-        android:id="@+id/main_add_widget_button"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="22dp"
-        android:text="添加桌面小组件" />
+        <TextView
+            android:id="@+id/main_rate_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="1 USD = -- CNY"
+            android:textColor="#7BE3A2"
+            android:textSize="30sp"
+            android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/main_refresh_button"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="12dp"
-        android:text="立即刷新汇率" />
-</LinearLayout>
+        <TextView
+            android:id="@+id/main_meta_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="还没有缓存汇率"
+            android:textColor="#9EA7B8"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/main_chart_status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="暂无 15 天曲线缓存，点刷新加载"
+            android:textColor="#D7DCE7"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <com.ratepulse.android.RatePulseChartView
+            android:id="@+id/main_chart_view"
+            android:layout_width="match_parent"
+            android:layout_height="170dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/widget_background" />
+
+        <TextView
+            android:id="@+id/main_status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="桌面小组件未添加"
+            android:textColor="#D7DCE7"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/main_add_widget_button"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="22dp"
+            android:text="添加桌面小组件" />
+
+        <Button
+            android:id="@+id/main_refresh_button"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:text="立即刷新汇率和曲线" />
+    </LinearLayout>
+</ScrollView>

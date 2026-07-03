@@ -62,7 +62,7 @@ Open the Android module in Android Studio:
 D:\program\ratepulse\src\RatePulse.Android
 ```
 
-Android v1 is a native Kotlin app widget. It defaults to `1 USD = x CNY`, supports manual widget refresh, caches the last successful rate, and schedules a daily refresh at 08:15 local device time.
+Android v1 is a native Kotlin app widget. The app page lets you choose a USD quote currency, refresh the latest rate, and view a 15-day USD-based trend chart. The home-screen widget follows that selected currency, shows a simplified trend sparkline, supports manual widget refresh, caches the last successful rate/trend, and schedules a daily refresh at 08:15 local device time.
 
 ## Notes
 
